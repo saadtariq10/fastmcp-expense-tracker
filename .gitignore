@@ -1,2 +1,32 @@
-__pycache__
-.venv
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python project metadata
+*.egg-info/
+*.lock
+
+# Uv and Poetry
+uv.lock
+poetry.lock
+
+# Logs and temp files
+*.log
+tmp/
+temp/
