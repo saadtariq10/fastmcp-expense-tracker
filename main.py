@@ -14,12 +14,22 @@ print(f"Database path: {DB_PATH}")
 
 mcp = FastMCP("ExpenseTracker")
 
-def init_db():  # Keep as sync for initialization
+def init_db():
+    import sqlite3, os
+
+    db_exists = os.path.exists(DB_PATH)
+    writable_dir = os.access(os.path.dirname(DB_PATH), os.W_OK)
+    writable_db = os.access(DB_PATH, os.W_OK) if db_exists else writable_dir
+
     try:
-        # Use synchronous sqlite3 just for initialization
-        import sqlite3
-        with sqlite3.connect(DB_PATH) as c:
-            c.execute("PRAGMA journal_mode=WAL")
+        with sqlite3.connect(DB_PATH, uri=False) as c:
+            # Only attempt WAL mode if we can write
+            if writable_db:
+                try:
+                    c.execute("PRAGMA journal_mode=WAL")
+                except Exception:
+                    pass
+
             c.execute("""
                 CREATE TABLE IF NOT EXISTS expenses(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,16 +40,19 @@ def init_db():  # Keep as sync for initialization
                     note TEXT DEFAULT ''
                 )
             """)
-            # Test write access
-            c.execute("INSERT OR IGNORE INTO expenses(date, amount, category) VALUES ('2000-01-01', 0, 'test')")
-            c.execute("DELETE FROM expenses WHERE category = 'test'")
-            print("Database initialized successfully with write access")
+
+            # Only test writes if writable
+            if writable_db:
+                try:
+                    c.execute("INSERT OR IGNORE INTO expenses(date, amount, category) VALUES ('2000-01-01', 0, 'test')")
+                    c.execute("DELETE FROM expenses WHERE category = 'test'")
+                except Exception:
+                    pass
+
+        print(f"Database initialized ({'writable' if writable_db else 'read-only'})")
     except Exception as e:
         print(f"Database initialization error: {e}")
         raise
-
-# Initialize database synchronously at module load
-init_db()
 
 @mcp.tool()
 async def add_expense(date, amount, category, subcategory="", note=""):  # Changed: added async
